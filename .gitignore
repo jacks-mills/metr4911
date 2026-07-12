@@ -1,0 +1,14 @@
+# Exclude everything and explicitly allow what I want to include
+
+*
+
+!.gitignore
+
+!/polyomino-printer/
+!/poly-cs-finder/
+!/cover/
+
+!/*/makefile
+!/*/plan.md
+!/*/src/
+!/*/src/*
