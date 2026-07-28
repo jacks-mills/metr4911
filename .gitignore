@@ -11,4 +11,5 @@
 !/*/makefile
 !/*/plan.md
 !/*/src/
-!/*/src/*
+!/*/src/*c
+!/*/src/*h
