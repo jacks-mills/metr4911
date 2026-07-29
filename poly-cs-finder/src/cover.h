@@ -28,9 +28,12 @@ void    cover_print(const struct Cover *cover);
 error_t cover_from_string(
             uint64_t stringLength, const char string[stringLength],
             struct Cover *cover);
-error_t cover_status_update(
-            FILE *universe, 
+
+error_t cover_status_mark_intersections(
             uint32_t length, bool status[length],
-            const struct Cover *cover);
+            FILE *universe, const struct Cover *cover);
+
+void cover_status_mark_subsets(uint32_t length, bool status[length], const struct Cover *cover);
+void cover_status_mark_supersets(uint32_t length, bool status[length], const struct Cover *cover);
 
 #endif /* COVER_H_ */

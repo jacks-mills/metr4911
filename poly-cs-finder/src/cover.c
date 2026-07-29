@@ -57,7 +57,8 @@ error_t cover_from_string(
     uint32_t symbolsSeen = 0;
     uint32_t symbolIndex = 0;
     uint32_t stringIndex = 0;
-    uint32_t rowLength = 0;
+    uint32_t columns = 0;
+    uint32_t rows = 1;
 
     /* the first character should be a symbol */
     if (!IS_SYMBOL(string[0])) {
@@ -79,20 +80,21 @@ error_t cover_from_string(
 
             if (!orderIsSet) {
                 orderIsSet = true;
-                cover->order = rowLength; 
+                cover->order = columns; 
             }
 
-            if (rowLength != cover->order) {
+            if (columns != cover->order) {
                 return ERROR;
             }
-            rowLength = 0;
+            columns = 0;
+            rows++;
 
             stringIndex++;
             continue;
         }
 
         lastWasSeparator = false;
-        rowLength++;
+        columns++;
 
         symbolIndex = ('A' <= symbol && symbol <= 'Z') ? symbol - 'A' : symbol - 'a' + 26;
 
@@ -114,7 +116,7 @@ error_t cover_from_string(
         stringIndex++;
     }
 
-    if (orderIsSet && rowLength != cover->order) {
+    if (orderIsSet && (columns != cover->order || rows != cover->order)) {
         return ERROR;
     }
 
@@ -241,10 +243,9 @@ static uint32_t cover_intersection_get(
     return intersection;
 }
 
-error_t cover_status_update(
-            FILE *universe, 
+error_t cover_status_mark_intersections(
             uint32_t length, bool status[length],
-            const struct Cover *cover) {
+            FILE *universe, const struct Cover *cover) {
     assert(universe != NULL);
     assert(cover != NULL);
     assert(length >= (1UL << cover->order));
@@ -290,4 +291,37 @@ error_t cover_status_update(
     }
 
     return ret;
+}
+
+void cover_status_mark_subsets(uint32_t length, bool status[length], const struct Cover *cover) {
+    for (uint32_t partialCover = length - 1; partialCover > 0; partialCover--) {
+        if (status[partialCover]) {
+            continue;
+        }
+
+        /* mark subsets one level down */
+        for (uint32_t polyIndex = 0; polyIndex < cover->numPolys; polyIndex++) {
+            if (!(partialCover & (1UL << polyIndex))) {
+                continue;
+            }
+            status[partialCover & ~(1UL << polyIndex)] = false;
+        }
+            
+    }
+}
+
+void cover_status_mark_supersets(uint32_t length, bool status[length], const struct Cover *cover) {
+    for (uint32_t partialCover = 0; partialCover < length - 1; partialCover++) {
+        if (!status[partialCover]) {
+            continue;
+        }
+
+        /* mark subsets one level up */
+        for (uint32_t polyIndex = 0; polyIndex < cover->numPolys; polyIndex++) {
+            if (partialCover & (1UL << polyIndex)) {
+                continue;
+            }
+            status[partialCover | (1UL << polyIndex)] = false;
+        }
+    }
 }
