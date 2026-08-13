@@ -105,7 +105,7 @@ void cover_print_string_from_status(
          uint32_t length, const uint8_t status[length],
          const struct Cover *cover) {
     for (uint32_t i = 0; i < length; i++) {
-        if (!status[i]) {
+        if (status[i] != STATUS_CRITICAL_SET) {
             continue;
         }
         
@@ -348,7 +348,7 @@ error_t cover_status_mark_intersections(
             }
             uint32_t intersection = cover_intersection_get(cover, coverp);
             assert(intersection < length);
-            status[intersection] = false;
+            status[intersection] = STATUS_SET;
             break;
         }
 
@@ -361,7 +361,7 @@ error_t cover_status_mark_intersections(
     }
 
     if (universeIsValid) {
-        status[(1UL << cover->order) - 1] = true;
+        status[(1UL << cover->order) - 1] = STATUS_DEFINING_SET;
     }
 
     return ret;
@@ -369,7 +369,7 @@ error_t cover_status_mark_intersections(
 
 void cover_status_mark_subsets(uint32_t length, uint8_t status[length], const struct Cover *cover) {
     for (uint32_t partialCover = length - 1; partialCover > 0; partialCover--) {
-        if (status[partialCover]) {
+        if (status[partialCover] != STATUS_SET) {
             continue;
         }
 
@@ -378,7 +378,7 @@ void cover_status_mark_subsets(uint32_t length, uint8_t status[length], const st
             if (!(partialCover & (1UL << polyIndex))) {
                 continue;
             }
-            status[partialCover & ~(1UL << polyIndex)] = false;
+            status[partialCover & ~(1UL << polyIndex)] = STATUS_SET;
         }
             
     }
@@ -386,16 +386,21 @@ void cover_status_mark_subsets(uint32_t length, uint8_t status[length], const st
 
 void cover_status_mark_supersets(uint32_t length, uint8_t status[length], const struct Cover *cover) {
     for (uint32_t partialCover = 0; partialCover < length - 1; partialCover++) {
-        if (!status[partialCover]) {
-            continue;
-        }
-
-        /* mark subsets one level up */
-        for (uint32_t polyIndex = 0; polyIndex < cover->numPolys; polyIndex++) {
-            if (partialCover & (1UL << polyIndex)) {
-                continue;
+        switch (status[partialCover]) {
+        default:
+            break;
+        case STATUS_UNDEFINED:
+            status[partialCover] = STATUS_CRITICAL_SET;
+            /* case fall through */
+        case STATUS_DEFINING_SET:
+            /* mark subsets one level up */
+            for (uint32_t polyIndex = 0; polyIndex < cover->numPolys; polyIndex++) {
+                if (partialCover & (1UL << polyIndex)) {
+                    continue;
+                }
+                status[partialCover | (1UL << polyIndex)] = STATUS_DEFINING_SET;
             }
-            status[partialCover | (1UL << polyIndex)] = false;
+            break;
         }
     }
 }

@@ -13,7 +13,20 @@ static void status_print(uint32_t length, uint8_t status[length]) {
     printf("Critical subsets: ");
     printf("[");
     for (uint32_t i = 0; i < length; i++) {
-        printf("%c", (status[i]) ? '1' : '0');
+        switch (status[i]) {
+        case STATUS_UNDEFINED:
+            printf("0");
+            break;
+        case STATUS_SET:
+            printf("1");
+            break;
+        case STATUS_DEFINING_SET:
+            printf("2");
+            break;
+        case STATUS_CRITICAL_SET:
+            printf("3");
+            break;
+        }
     }
     printf("]\n");
 }
@@ -41,8 +54,8 @@ int main(int argc, char **argv) {
     universe = fopen(argv[2], "r");
     exit_on_error(universe == NULL, EXIT_FAILURE, "fopen failed to open universe file\n");
 
-    uint8_t subsetIsCritSet[COVER_MAX_NUM_PARTIAL_COVERS] = { false };
-    memset(subsetIsCritSet, STATUS_UNDEF, sizeof(subsetIsCritSet));
+    uint8_t subsetIsCritSet[COVER_MAX_NUM_PARTIAL_COVERS] = { 0 };
+    memset(subsetIsCritSet, STATUS_UNDEFINED, sizeof(subsetIsCritSet));
     assert((1UL << cover.order) <= sizeof(subsetIsCritSet)/sizeof(*subsetIsCritSet));
 
     status_print((1UL << cover.order), subsetIsCritSet);
