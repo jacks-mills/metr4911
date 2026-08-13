@@ -16,6 +16,10 @@
 #define COVER_MAX_COVER_STRING_LENGTH   COVER_MAX_ORDER * COVER_MAX_ORDER + COVER_MAX_ORDER
 #define COVER_MAX_NUM_PARTIAL_COVERS    (1 << COVER_MAX_ORDER)
 
+#define STATUS_UNDEF 0
+#define STATUS_NOT_CS 1
+#define STATUS_CS 2
+
 
 
 struct Cover {
@@ -25,15 +29,17 @@ struct Cover {
 };
 
 void    cover_print(const struct Cover *cover);
-error_t cover_from_string(
-            uint64_t stringLength, const char string[stringLength],
-            struct Cover *cover);
+void    cover_print_string_from_status(
+         uint32_t length, const uint8_t status[length],
+         const struct Cover *cover);
+
+error_t cover_from_string(uint64_t length, const char string[length], struct Cover *cover);
+void    cover_to_string(uint32_t length, char string[length], const struct Cover *cover);
 
 error_t cover_status_mark_intersections(
-            uint32_t length, bool status[length],
+            uint32_t length, uint8_t status[length],
             FILE *universe, const struct Cover *cover);
-
-void cover_status_mark_subsets(uint32_t length, bool status[length], const struct Cover *cover);
-void cover_status_mark_supersets(uint32_t length, bool status[length], const struct Cover *cover);
+void cover_status_mark_subsets(uint32_t length, uint8_t status[length], const struct Cover *cover);
+void cover_status_mark_supersets(uint32_t length, uint8_t status[length], const struct Cover *cover);
 
 #endif /* COVER_H_ */

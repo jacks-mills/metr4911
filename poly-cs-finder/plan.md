@@ -20,7 +20,7 @@ Program name: pcritical
 * if cover is bad, print error message "cover on line X is bad"
 
 * covers_from_stream(stream, len, covers, numCovers, lineNumber)
-* cover_status_update(stream, cover, status)
+* cover_status_mark_intersections(stream, cover, status)
 
 
 UNIVERSE FILE BNF

@@ -41,6 +41,80 @@ void cover_print(const struct Cover *cover) {
     }
 }
 
+void cover_to_string( uint32_t length, char string[length], const struct Cover *cover) {
+    char poly2symbol[52 + 1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
+    assert(cover->numPolys + 1 <= sizeof(poly2symbol));
+    poly2symbol[cover->numPolys] = '.'; /* assigin '.' to no poly */
+
+    uint32_t stringIndex = 0;
+    uint32_t cellIndex = 0;
+    uint32_t polyIndex = 0;
+    assert((cover->order + 1) * cover->order <= length);
+    while (cellIndex < cover->order * cover->order) {
+        if (cellIndex != 0 && cellIndex % cover->order == 0) {
+            string[stringIndex] = ' ';
+            stringIndex++;
+        }
+
+        for (polyIndex = 0; polyIndex < cover->numPolys; polyIndex++) {
+            if (cover->polys[polyIndex] & (1UL << cellIndex)) {
+                break;
+            }
+        }
+        string[stringIndex] = poly2symbol[polyIndex];
+        stringIndex++;
+        
+        cellIndex++;
+    }
+
+    string[stringIndex] = '\0';
+}
+
+static void cover_to_string_masked(
+        uint32_t length, char string[length],
+        const struct Cover *cover, uint32_t mask) {
+    char poly2symbol[52 + 1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
+    assert(cover->numPolys + 1 <= sizeof(poly2symbol));
+    poly2symbol[cover->numPolys] = '.'; /* assigin '.' to no poly */
+
+    uint32_t stringIndex = 0;
+    uint32_t cellIndex = 0;
+    uint32_t polyIndex = 0;
+    assert((cover->order + 1) * cover->order <= length);
+    while (cellIndex < cover->order * cover->order) {
+        if (cellIndex != 0 && cellIndex % cover->order == 0) {
+            string[stringIndex] = ' ';
+            stringIndex++;
+        }
+
+        for (polyIndex = 0; polyIndex < cover->numPolys; polyIndex++) {
+            if (cover->polys[polyIndex] & (1UL << cellIndex) && mask & (1UL << polyIndex)) {
+                break;
+            }
+        }
+        string[stringIndex] = poly2symbol[polyIndex];
+        stringIndex++;
+        
+        cellIndex++;
+    }
+
+    string[stringIndex] = '\0';
+}
+
+void cover_print_string_from_status(
+         uint32_t length, const uint8_t status[length],
+         const struct Cover *cover) {
+    for (uint32_t i = 0; i < length; i++) {
+        if (!status[i]) {
+            continue;
+        }
+        
+        char coverString[COVER_MAX_COVER_STRING_LENGTH] = {0};
+        cover_to_string_masked(sizeof(coverString), coverString, cover, i);
+        printf("%s\n", coverString);
+    }
+}
+
 error_t cover_from_string(
             uint64_t stringLength, const char string[stringLength],
             struct Cover *cover) {
@@ -235,7 +309,7 @@ static uint32_t cover_intersection_get(
     for (uint32_t i = 0; i < primary->numPolys; i++) {
         for (uint32_t j = 0; j < secondary->numPolys; j++) {
             if (primary->polys[i] == secondary->polys[j]) {
-                intersection |= (1 << i); 
+                intersection |= (1UL << i); 
                 break;
             }
         }
@@ -244,7 +318,7 @@ static uint32_t cover_intersection_get(
 }
 
 error_t cover_status_mark_intersections(
-            uint32_t length, bool status[length],
+            uint32_t length, uint8_t status[length],
             FILE *universe, const struct Cover *cover) {
     assert(universe != NULL);
     assert(cover != NULL);
@@ -293,7 +367,7 @@ error_t cover_status_mark_intersections(
     return ret;
 }
 
-void cover_status_mark_subsets(uint32_t length, bool status[length], const struct Cover *cover) {
+void cover_status_mark_subsets(uint32_t length, uint8_t status[length], const struct Cover *cover) {
     for (uint32_t partialCover = length - 1; partialCover > 0; partialCover--) {
         if (status[partialCover]) {
             continue;
@@ -310,7 +384,7 @@ void cover_status_mark_subsets(uint32_t length, bool status[length], const struc
     }
 }
 
-void cover_status_mark_supersets(uint32_t length, bool status[length], const struct Cover *cover) {
+void cover_status_mark_supersets(uint32_t length, uint8_t status[length], const struct Cover *cover) {
     for (uint32_t partialCover = 0; partialCover < length - 1; partialCover++) {
         if (!status[partialCover]) {
             continue;
