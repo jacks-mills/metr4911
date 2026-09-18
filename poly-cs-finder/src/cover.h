@@ -1,9 +1,9 @@
 #ifndef COVER_H_
 #define COVER_H_
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include "errors.h"
 
 
@@ -31,8 +31,9 @@ struct Cover {
 
 void    cover_print(const struct Cover *cover);
 void    cover_print_string_from_status(
-         uint32_t length, const uint8_t status[length],
-         const struct Cover *cover);
+        FILE *stream,
+        uint32_t length, const uint8_t status[length],
+        const struct Cover *cover);
 
 error_t cover_from_string(uint64_t length, const char string[length], struct Cover *cover);
 void    cover_to_string(uint32_t length, char string[length], const struct Cover *cover);
@@ -40,6 +41,9 @@ void    cover_to_string(uint32_t length, char string[length], const struct Cover
 error_t cover_status_mark_intersections(
             uint32_t length, uint8_t status[length],
             FILE *universe, const struct Cover *cover);
+error_t cover_find_supersets(
+            FILE* universe, const struct Cover *cover, uint32_t mask,
+            uint32_t *length, struct Cover supersets[*length]);
 void cover_status_mark_subsets(uint32_t length, uint8_t status[length], const struct Cover *cover);
 void cover_status_mark_supersets(uint32_t length, uint8_t status[length], const struct Cover *cover);
 

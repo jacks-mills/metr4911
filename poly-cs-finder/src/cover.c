@@ -11,6 +11,7 @@
 
 #define IS_SYMBOL(chr)          (('a' <= chr && chr <= 'z') || ('A' <= chr && chr <= 'Z'))
 #define IS_SEPARATOR(chr)       (chr == ' ')
+#define IS_EMPTY(chr)           (chr == '.')
 #define IS_COMMENT_PREFIX(chr)  (chr == '#')
 
 
@@ -102,8 +103,9 @@ static void cover_to_string_masked(
 }
 
 void cover_print_string_from_status(
-         uint32_t length, const uint8_t status[length],
-         const struct Cover *cover) {
+        FILE* stream,
+        uint32_t length, const uint8_t status[length],
+        const struct Cover *cover) {
     for (uint32_t i = 0; i < length; i++) {
         if (status[i] != STATUS_CRITICAL_SET) {
             continue;
@@ -111,7 +113,7 @@ void cover_print_string_from_status(
         
         char coverString[COVER_MAX_COVER_STRING_LENGTH] = {0};
         cover_to_string_masked(sizeof(coverString), coverString, cover, i);
-        printf("%s\n", coverString);
+        fprintf(stream, "%s\n", coverString);
     }
 }
 
@@ -134,19 +136,25 @@ error_t cover_from_string(
     uint32_t columns = 0;
     uint32_t rows = 1;
 
-    /* the first character should be a symbol */
-    if (!IS_SYMBOL(string[0])) {
+    /* the first character should be a symbol or empty*/
+    if (!IS_SYMBOL(string[0]) && !IS_EMPTY(string[0])) {
         return ERROR;
     }
 
     while(stringIndex < stringLength) {
         char symbol = string[stringIndex];
 
-        if (!IS_SYMBOL(symbol)) {
-            if (!IS_SEPARATOR(symbol)) {
-                return ERROR;
-            }
+        if (!IS_SYMBOL(symbol) && !IS_EMPTY(symbol) && !IS_SEPARATOR(symbol)) return ERROR;
 
+        if (IS_EMPTY(symbol)) {
+            lastWasSeparator = false;
+            columns++;
+            symbolsSeen++;
+            stringIndex++;
+            continue;
+        }
+
+        if (IS_SEPARATOR(symbol)) {
             if (lastWasSeparator) {
                 return ERROR;
             }
@@ -171,7 +179,6 @@ error_t cover_from_string(
         columns++;
 
         symbolIndex = ('A' <= symbol && symbol <= 'Z') ? symbol - 'A' : symbol - 'a' + 26;
-
         if (symbol2subset[symbolIndex] == NULL) {
             if (cover->numPolys >= COVER_MAX_POLYOMINOES) {
                 return ERROR;
@@ -301,12 +308,14 @@ static enum LineStatus universe_process_line(FILE *universe, struct Cover *cover
     return ret;
 }
 
-static uint32_t cover_intersection_get(
-            const struct Cover *primary, const struct Cover *secondary) {
+static uint32_t cover_get_masked_intersections(
+            const struct Cover *primary, const struct Cover *secondary,
+            uint32_t mask) {
     assert(primary != NULL);
     assert(secondary != NULL);
     uint32_t intersection = 0;
     for (uint32_t i = 0; i < primary->numPolys; i++) {
+        if (!(mask & (1UL << i))) continue;
         for (uint32_t j = 0; j < secondary->numPolys; j++) {
             if (primary->polys[i] == secondary->polys[j]) {
                 intersection |= (1UL << i); 
@@ -315,6 +324,48 @@ static uint32_t cover_intersection_get(
         }
     }
     return intersection;
+}
+
+error_t cover_find_supersets(
+            FILE* universe, const struct Cover *cover, uint32_t mask,
+            uint32_t *length, struct Cover supersets[*length]) {
+    assert(universe != NULL);
+    assert(cover != NULL);
+    assert(length != NULL);
+    assert(supersets != NULL);
+
+    uint32_t intersection = 0;
+    uint32_t numSupers = 0;
+    struct Cover *super = supersets;
+
+    uint32_t lineNumber = 1;
+    enum LineStatus lineStatus = universe_process_line(universe, super);
+    while (lineStatus != LS_EOF && lineNumber != UINT32_MAX && numSupers < *length) {
+        switch (lineStatus) {
+        default:
+            break;
+        case LS_BAD:
+            return ERROR;
+        case LS_COVER:
+            intersection = cover_get_masked_intersections(
+                cover, super, mask);
+            if (intersection == (((1UL << cover->numPolys) - 1) & mask)) {
+                numSupers++;
+                super++;
+            }
+            break;
+        }
+
+        lineStatus = universe_process_line(universe, super);
+        lineNumber++;
+    }
+
+    if (lineNumber == UINT32_MAX) {
+        return ERROR;
+    }
+
+    *length = numSupers;
+    return OKAY;
 }
 
 error_t cover_status_mark_intersections(
@@ -346,7 +397,9 @@ error_t cover_status_mark_intersections(
             if (!universeIsValid) {
                 break;
             }
-            uint32_t intersection = cover_intersection_get(cover, coverp);
+            uint32_t intersection = cover_get_masked_intersections(
+                    cover, coverp,
+                    (1UL << COVER_MAX_POLYOMINOES) - 1);
             assert(intersection < length);
             status[intersection] = STATUS_SET;
             break;

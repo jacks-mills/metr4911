@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 typedef enum {
-    OKAY = 0,
-    ERROR
+    OKAY  = 0,
+    ERROR = 1
 } error_t;
 
 
