@@ -10,27 +10,14 @@
 
 #include "polys.h"
 #include "error.h"
+#include "hash.h"
 
 
 #define POLYS_LENGTH_MAX ((1 << 30) / sizeof(uint64_t)) /* 1MB */
 uint64_t polys[POLYS_LENGTH_MAX];
 
-static inline uint64_t fmix64(uint64_t k) {
-    k ^= k >> 33;
-    k *= 0xff51afd7ed558ccdULL;
-    k ^= k >> 33;
-    k *= 0xc4ceb9fe1a85ec53ULL;
-    k ^= k >> 33;
-    return k;
-}
 
-static inline uint64_t splitmix64_mix(uint64_t x) {
-    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
-    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
-    return x ^ (x >> 31);
-}
-
-int compare(const void *a, const void *b) {
+int compare_uint64(const void *a, const void *b) {
     uint64_t left = *((uint64_t*) a);
     uint64_t right = *((uint64_t*) b);
 
@@ -53,7 +40,6 @@ int compare_by_hash(const void *a, const void *b) {
     }
     return 1;
 }
-
 
 int main(int argc, char *argv[argc]) {
     uint8_t error = OKAY;
@@ -105,11 +91,11 @@ int main(int argc, char *argv[argc]) {
             error = polys_from_string(
                     &polysCount, POLYS_LENGTH_MAX, polys,
                     lineEnd - lineStart, &mapping[lineStart]);
-
             if (error && verbose) {
                 printf("Error on line %u\n", lineNumber);
             }
 
+            /* go to start of next line */
             lineEnd++;
             lineStart = lineEnd;
         }
@@ -118,7 +104,7 @@ int main(int argc, char *argv[argc]) {
         if (verbose) {
             printf("sorting...\n");
         }
-        qsort(polys, polysCount, sizeof(*polys), compare);
+        qsort(polys, polysCount, sizeof(*polys), compare_uint64);
 
         /* prune duplicate polys */
         if (verbose) {
