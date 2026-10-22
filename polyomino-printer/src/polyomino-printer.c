@@ -32,11 +32,13 @@ enum State {
 };
 
 const char *colours[] = {
-        TEXT_COLOUR_BG_BLACK, TEXT_COLOUR_BG_RED, TEXT_COLOUR_BG_GREEN,
+        //TEXT_COLOUR_BG_BLACK, TEXT_COLOUR_BG_RED, TEXT_COLOUR_BG_GREEN,
+        TEXT_COLOUR_BG_RED, TEXT_COLOUR_BG_GREEN,
         TEXT_COLOUR_BG_BROWN, TEXT_COLOUR_BG_BLUE, TEXT_COLOUR_BG_MAGENTA,
         TEXT_COLOUR_BG_CYAN, TEXT_COLOUR_BG_WHITE,
 
-        TEXT_COLOUR_BG_BRIGHT_BLACK,TEXT_COLOUR_BG_BRIGHT_RED, TEXT_COLOUR_BG_BRIGHT_GREEN,
+        //TEXT_COLOUR_BG_BRIGHT_BLACK,TEXT_COLOUR_BG_BRIGHT_RED, TEXT_COLOUR_BG_BRIGHT_GREEN,
+        TEXT_COLOUR_BG_BRIGHT_RED, TEXT_COLOUR_BG_BRIGHT_GREEN,
         TEXT_COLOUR_BG_BRIGHT_BROWN, TEXT_COLOUR_BG_BRIGHT_BLUE, TEXT_COLOUR_BG_BRIGHT_MAGENTA,
         TEXT_COLOUR_BG_BRIGHT_CYAN, TEXT_COLOUR_BG_BRIGHT_WHITE,
 
@@ -46,7 +48,7 @@ const char *colours[] = {
 
 int main(int argc, char **argv) {
     const char **next_colour = colours;
-    const char *char2colour[26 + 26] = { NULL }; /* maps a-z and A-Z to colour console codes */
+    const char *char2colour[26 + 26 + 1] = { NULL, [52]=TEXT_COLOUR_BG_BLACK }; /* maps a-z and A-Z to colour console codes */
     const char *colour = NULL;
     int c = 0, i = 0;
 
@@ -87,7 +89,7 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        if (!isalpha(c)) {
+        if (!isalpha(c) && c != '.') {
             printf("Invalid character \"%c\"\n\n", c);
             goto reset;
         }
@@ -97,7 +99,7 @@ int main(int argc, char **argv) {
             goto reset;
         }
 
-        i = ('a' <= c && c <= 'z') ? c - 'a' : c - 'A' + 26;
+        i = (c == '.') ? 52 : ('a' <= c && c <= 'z') ? c - 'a' : c - 'A' + 26;
         if (char2colour[i] == NULL) {
             char2colour[i] = *next_colour;
             next_colour++;

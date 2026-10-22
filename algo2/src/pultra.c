@@ -11,7 +11,26 @@
 
 #include "error.h"
 
-#define USAGE_STR "usage: pultra [-v] UNIVERSE\n"
+#define USAGE_STR           "usage: pultra [-v] UNIVERSE\n"
+#define COVERS_PER_BLOCK    10
+
+
+struct Block {
+    struct Block next*;
+    uint32_t length;
+    uint32_t size;
+    uint32_t covers*;
+};
+
+#define COVERS_POOL_LENGTH_MAX  ((1 << 20) / sizeof(uint3_t))
+uint32_t coversPool[COVERS_POOL_LENGTH_MAX];
+
+#define BLOCKS_POOL_LENGTH_MAX (
+struct Block blocksPool[BLOCKS_POO_LENGTH_MAX];
+
+#define POLY_2_COVER_LENGTH_MAX (1 << 15)
+struct Block *poly2cover[POLY_2_COVER_LENGTH_MAX];
+
 
 
 int main(int argc, char *argv[argc]) {

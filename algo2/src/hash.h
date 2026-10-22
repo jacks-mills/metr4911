@@ -3,9 +3,6 @@
 
 #include <stdint.h>
 
-
-uint64_t hash(uint64_t data);
-
-
+uint64_t hash(uint64_t k);
 
 #endif /* HASH_H_ */
