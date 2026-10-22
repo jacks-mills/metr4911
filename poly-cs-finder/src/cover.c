@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdint.h>
@@ -456,4 +457,58 @@ void cover_status_mark_supersets(uint32_t length, uint8_t status[length], const 
             break;
         }
     }
+}
+
+error_t cover_universe_load(FILE *universe, uint32_t *length, struct Cover **covers) {
+    assert(universe != NULL);
+    assert(length != NULL);
+    assert(covers != NULL);
+
+    uint32_t capacity = 1024;
+    uint32_t numCovers = 0;
+    struct Cover *array = malloc(capacity * sizeof(*array));
+    if (array == NULL) {
+        return ERROR;
+    }
+
+    uint32_t lineNumber = 1;
+    enum LineStatus lineStatus = universe_process_line(universe, &array[numCovers]);
+    while (lineStatus != LS_EOF && lineNumber != UINT32_MAX) {
+        switch (lineStatus) {
+        default:
+            break;
+        case LS_BAD:
+            fprintf(stderr, "%u: Bad line\n", lineNumber);
+            free(array);
+            return ERROR;
+        case LS_COVER:
+            numCovers++;
+            if (numCovers == capacity) {
+                if (capacity > UINT32_MAX / 2) {
+                    free(array);
+                    return ERROR;
+                }
+                capacity *= 2;
+                struct Cover *grown = realloc(array, capacity * sizeof(*array));
+                if (grown == NULL) {
+                    free(array);
+                    return ERROR;
+                }
+                array = grown;
+            }
+            break;
+        }
+
+        lineStatus = universe_process_line(universe, &array[numCovers]);
+        lineNumber++;
+    }
+
+    if (lineNumber == UINT32_MAX) {
+        free(array);
+        return ERROR;
+    }
+
+    *length = numCovers;
+    *covers = array;
+    return OKAY;
 }

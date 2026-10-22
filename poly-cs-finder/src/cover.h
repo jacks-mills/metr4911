@@ -44,6 +44,9 @@ error_t cover_status_mark_intersections(
 error_t cover_find_supersets(
             FILE* universe, const struct Cover *cover, uint32_t mask,
             uint32_t *length, struct Cover supersets[*length]);
+/* Read every cover in a universe file into a newly allocated array (free with free()). */
+error_t cover_universe_load(FILE *universe, uint32_t *length, struct Cover **covers);
+
 void cover_status_mark_subsets(uint32_t length, uint8_t status[length], const struct Cover *cover);
 void cover_status_mark_supersets(uint32_t length, uint8_t status[length], const struct Cover *cover);
 

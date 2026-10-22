@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -pedantic -g
+CFLAGS = -std=c99 -Wall -pedantic -g -pthread
 
 SRC_DIR = ./src
 BLD_DIR = ./bld
@@ -10,7 +10,7 @@ SRCS = $(filter-out $(patsubst %,$(SRC_DIR)/%.c,$(BINS)),$(wildcard $(SRC_DIR)/*
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(BLD_DIR)/%.o, $(SRCS))
 BINS = pcritical pchecker plister
 
-LDLIBS =
+LDLIBS = -pthread
 
 .PHONY: all clean
 .SECONDARY:
