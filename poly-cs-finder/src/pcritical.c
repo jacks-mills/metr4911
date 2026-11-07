@@ -11,7 +11,6 @@
 
 
 struct Context {
-    FILE *covers;
     FILE *universe;
     FILE *out;
     char cover[COVER_MAX_COVER_STRING_LENGTH];
@@ -19,12 +18,7 @@ struct Context {
 };
 
 void usage(void) {
-    const char *programName = "pcritical";
-    const uint32_t programNameLen = 9;
-
-    fprintf(stderr, "%*s [-v]    COVER          UNIVERSE    [OUT]\n", programNameLen, programName);
-    fprintf(stderr, "%*s [-v] -c COVER       -u UNIVERSE [-o OUT]\n", programNameLen, "");
-    fprintf(stderr, "%*s [-v] -C COVERS_FILE -u UNIVERSE [-o OUT]\n", programNameLen, "");
+    fprintf(stderr, "pcritical [-v] COVER UNIVERSE [OUT]\n");
     exit(EXIT_FAILURE);
 }
 
@@ -32,87 +26,57 @@ error_t process_cmd_line(uint32_t argc, char *argv[argc], struct Context *contex
     assert(argv != NULL);
     assert(context != NULL);
 
-    context->covers = NULL;
     context->universe = NULL;
     context->out = NULL;
     context->cover[0] = '\0';
     context->verboseLevel = 0;
 
 
-    if (argc == 0) {
+    uint32_t remaining = argc;
+    char **head = argv;
+
+    if (remaining < 2) {
         return ERROR;
     }
 
-    if (strcmp(argv[1], "-v") == 0) {
+    remaining--;
+    head++;
+
+    if (strcmp(*head, "-v") == 0) {
         context->verboseLevel = 1;
-        argc--;
-        argv++;
+        remaining--;
+        head++;
     }
 
-    if (!(argc == 3 || argc == 4 || argc == 5 || argc == 7)) {
+    if (!(remaining == 2 || remaining == 3)) {
         return ERROR;
     }
 
-    char *cover = NULL;
-    char *coverFilePath = NULL;
-    char *universeFilePath = NULL;
-    char *outFilePath = NULL;
-
-    bool isPositionalArguments = (argc == 3 || argc == 4);
-    if (isPositionalArguments) {
-        cover = argv[1]; 
-        universeFilePath = argv[2];
-        if (argc == 4) {
-            outFilePath = argv[3];
-        }
-    } else {
-        for (uint32_t i = 1; i + 1 < argc; i += 2) {
-            char *option = argv[i];
-            char *arg    = argv[i + 1];
-
-            if (option[0] != '-' || option[1] == '\0' || option[2] != '\0') return ERROR;
-            switch(option[1]) {
-            default:
-                return ERROR;
-            case 'c':
-                if (cover != NULL) return ERROR;
-                cover = arg;
-                break;
-            case 'C':
-                if (coverFilePath != NULL) return ERROR;
-                coverFilePath = arg;
-                break;
-            case 'u':
-                if (universeFilePath != NULL) return ERROR;
-                universeFilePath = arg;
-                break;
-            case 'o':
-                if (outFilePath != NULL) return ERROR;
-                outFilePath = arg;
-                break;
-            }
-        }
+    /* Cover argument */
+    if (strlen(*head) + 1 > sizeof(context->cover)) {
+        return ERROR;
     }
+    strncpy(context->cover, *head, sizeof(context->cover));
+    remaining--;
+    head++;
 
-    if (cover != NULL) {
-        if (strlen(cover) + 1 > sizeof(context->cover)) return ERROR;
-        strncpy(context->cover, cover, sizeof(context->cover));
+    /* Universe argument */
+    context->universe = fopen(*head, "r");
+    if (context->universe == NULL) {
+        return ERROR;
     }
+    remaining--;
+    head++;
 
-    if (coverFilePath != NULL) {
-        context->covers = fopen(coverFilePath, "r");
-        if (context->covers == NULL) return ERROR;
-    }
-
-    if (universeFilePath != NULL) {
-        context->universe = fopen(universeFilePath, "r");
-        if (context->universe == NULL) return ERROR;
-    }
-
+    /* Out argument */
     context->out = stdout;
-    if (outFilePath != NULL) {
-        context->out = fopen(outFilePath, "w");
-        if (context->out == NULL) return ERROR;
+    if (remaining != 0) {
+        context->out = fopen(*head, "w");
+        if (context->out == NULL) {
+            return ERROR;
+        }
+        remaining--;
+        head++;
     }
 
     return OKAY;
@@ -124,16 +88,16 @@ static void status_print(uint32_t length, uint8_t status[length]) {
     for (uint32_t i = 0; i < length; i++) {
         switch (status[i]) {
         case STATUS_UNDEFINED:
-            printf("0");
+            printf("U");
             break;
         case STATUS_SET:
-            printf("1");
+            printf("S");
             break;
         case STATUS_DEFINING_SET:
-            printf("2");
+            printf("D");
             break;
         case STATUS_CRITICAL_SET:
-            printf("3");
+            printf("C");
             break;
         }
     }
@@ -150,12 +114,19 @@ int main(int argc, char **argv) {
     }
 
     bool verbose = (context.verboseLevel > 0);
-    FILE *universe = context.universe;
-
-    if (context.covers != NULL) {
-        exit_on_error(true, EXIT_FAILURE, "Not implemented covers file functionality\n");
+    if (verbose) {
+        printf("Context struct\n");
+        printf("cover:     %s\n", context.cover);
+        printf("universe:  %p\n", (void*) context.universe);
+        if (context.out == NULL) {
+            printf("out:       NULL\n");
+        } else {
+            printf("out:       %p\n", (void*) context.out);
+        }
+        printf("verbosity: %u\n", context.verboseLevel);
     }
 
+    FILE *universe = context.universe;
     struct Cover cover = {0};
     error = cover_from_string(strlen(context.cover), context.cover, &cover);
     exit_on_error(error, EXIT_FAILURE, "bad cover\n");
