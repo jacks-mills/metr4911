@@ -150,6 +150,7 @@ int main(int argc, char **argv) {
         status_print((1UL << cover.order), subsetIsCritSet);
     }
 
+    /* MARK INTERSECTIONS */
     error = cover_status_mark_intersections(
             (1UL << cover.order), subsetIsCritSet,
             universe, &cover);
@@ -159,19 +160,22 @@ int main(int argc, char **argv) {
         status_print((1UL << cover.order), subsetIsCritSet);
     }
 
+    /* MARK SUBSETS */
     cover_status_mark_subsets((1UL << cover.order), subsetIsCritSet, &cover);
     if (verbose) {
         printf("Marking subsets\n");
         status_print((1UL << cover.order), subsetIsCritSet);
     }
 
+    /* MARK SUPERSETS */
     cover_status_mark_supersets((1UL << cover.order), subsetIsCritSet, &cover);
     if (verbose) {
         printf("Marking supersets\n");
         status_print((1UL << cover.order), subsetIsCritSet);
     }
     
-    //printf("%s\n", coverString);
+    /* REPORT RESULTS */
+    //fprintf(context.out, "%s\n", coverString);
     cover_print_string_from_status(context.out, (1UL << cover.order), subsetIsCritSet, &cover);
     if (verbose) {
         printf("Done\n");
